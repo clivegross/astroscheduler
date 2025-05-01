@@ -1,0 +1,65 @@
+<?xml version="1.0" ?>
+<ObjectSet ExportMode="Standard" Note="TypesFirst" SemanticsFilter="Standard" Version="6.0.4.90">
+  <MetaInformation>
+    <ExportMode Value="Standard"/>
+    <SemanticsFilter Value="None"/>
+    <RuntimeVersion Value="6.0.4.90"/>
+    <SourceVersion Value="6.0.4.90"/>
+    <ServerFullPath Value="/Server 1"/>
+  </MetaInformation>
+  <ExportedObjects>
+    <OI NAME="Office Light Schedule" TYPE="schedule.NSPMultistateSchedule">
+      <PI Name="ScheduleDefault" Value="0"/>
+      <OI NAME="ES00001" TYPE="system.schedulecommon.propertytypes.SpecialEvent" hidden="1">
+        <PI Name="EventIndex" Value="1"/>
+        <PI Name="EventName" Value="05-01"/>
+        <PI Name="EventPriority" Value="16"/>
+        <OI NAME="EP" TYPE="system.schedulecommon.propertytypes.calentry.DateCalendarEntry" hidden="1">
+          <PI Name="DayOfMonth" Value="1"/>
+          <PI Name="Month" Value="5"/>
+          <PI Name="Year" Value="2155"/>
+        </OI>
+        <OI NAME="TVP00001" TYPE="system.schedulecommon.propertytypes.tvp.IntegerValuePair" hidden="1">
+          <PI Name="Hour" Value="6"/>
+          <PI Name="Minute" Value="13"/>
+          <PI Name="Value" Value="1"/>
+        </OI>
+        <OI NAME="TVP00002" TYPE="system.schedulecommon.propertytypes.tvp.IntegerValuePair" hidden="1">
+          <PI Name="Hour" Value="16"/>
+          <PI Name="Minute" Value="30"/>
+          <PI Name="Value" Value="9"/>
+        </OI>
+        <OI NAME="TVP00003" TYPE="system.schedulecommon.propertytypes.tvp.IntegerValuePair" hidden="1">
+          <PI Name="Hour" Value="17"/>
+          <PI Name="Minute" Value="16"/>
+          <PI Name="Value" Value="2"/>
+        </OI>
+        <OI NAME="TVP00004" TYPE="system.schedulecommon.propertytypes.tvp.IntegerValuePair" hidden="1">
+          <PI Name="Hour" Value="18"/>
+          <PI Name="Minute" Value="16"/>
+          <PI Name="Value" Value="3"/>
+        </OI>
+      </OI>
+      <OI NAME="ES00002" TYPE="system.schedulecommon.propertytypes.SpecialEvent" hidden="1">
+        <PI Name="EventIndex" Value="2"/>
+        <PI Name="EventName" Value="05-02"/>
+        <PI Name="EventPriority" Value="16"/>
+        <OI NAME="EP" TYPE="system.schedulecommon.propertytypes.calentry.DateCalendarEntry" hidden="1">
+          <PI Name="DayOfMonth" Value="2"/>
+          <PI Name="Month" Value="5"/>
+          <PI Name="Year" Value="2155"/>
+        </OI>
+        <OI NAME="TVP00001" TYPE="system.schedulecommon.propertytypes.tvp.IntegerValuePair" hidden="1">
+          <PI Name="Hour" Value="6"/>
+          <PI Name="Minute" Value="13"/>
+          <PI Name="Value" Value="1"/>
+        </OI>
+        <OI NAME="TVP00002" TYPE="system.schedulecommon.propertytypes.tvp.IntegerValuePair" hidden="1">
+          <PI Name="Hour" Value="16"/>
+          <PI Name="Minute" Value="30"/>
+          <PI Name="Value" Value="9"/>
+        </OI>
+      </OI>
+    </OI>
+  </ExportedObjects>
+</ObjectSet>
