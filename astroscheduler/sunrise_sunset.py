@@ -41,12 +41,66 @@ def generate_sunrise_sunset_df(latitude, longitude, year):
 
     # Create a DataFrame
     df = pd.DataFrame({
-        "Date": dates,
+        "Date": pd.to_datetime(dates),
         "Sunrise": sunrise_times,
         "Sunset": sunset_times
     })
 
     return df
+
+def get_sunrise_or_sunset_time(df, event, transition="Sunrise"):
+    """
+    Get the sunrise or sunset time for a specific event based on its DayOfMonth and Month.
+
+    :param df: A pandas DataFrame produced by generate_sunrise_sunset_df, containing
+               columns ['Date', 'Sunrise', 'Sunset'].
+    :param event: A dictionary containing event details (DayOfMonth, Month).
+    :return: A dictionary with the sunrise time {"Hour": x, "Minute": y}.
+    :raises ValueError: If the event date is not found in the DataFrame.
+    """
+    # Extract the DayOfMonth and Month from the event
+    day = event.get("DayOfMonth")
+    month = event.get("Month")
+
+    if day is None or month is None:
+        raise ValueError("Event must contain 'DayOfMonth' and 'Month' keys.")
+
+    # Filter the DataFrame for the matching date
+    matching_row = df[(df["Date"].dt.day == day) & (df["Date"].dt.month == month)]
+
+    if matching_row.empty:
+        raise ValueError(f"No matching date found in the DataFrame for Day: {day}, Month: {month}.")
+
+    # Extract the sunrise time
+    sunrise_time = matching_row.iloc[0][transition]  # Sunrise is a datetime.time object
+
+    return {"Hour": sunrise_time.hour, "Minute": sunrise_time.minute}
+
+def get_sunrise_time(df, event):
+    """
+    Get the sunrise time for a specific event based on its DayOfMonth and Month.
+
+    :param df: A pandas DataFrame produced by generate_sunrise_sunset_df, containing
+               columns ['Date', 'Sunrise', 'Sunset'].
+    :param event: A dictionary containing event details (DayOfMonth, Month).
+    :return: A dictionary with the sunrise time {"Hour": x, "Minute": y}.
+    :raises ValueError: If the event date is not found in the DataFrame.
+    """
+    return get_sunrise_or_sunset_time(df, event, "Sunrise")
+
+def get_sunset_time(df, event):
+    """
+    Get the sunrise time for a specific event based on its DayOfMonth and Month.
+
+    :param df: A pandas DataFrame produced by generate_sunrise_sunset_df, containing
+               columns ['Date', 'Sunrise', 'Sunset'].
+    :param event: A dictionary containing event details (DayOfMonth, Month).
+    :return: A dictionary with the sunrise time {"Hour": x, "Minute": y}.
+    :raises ValueError: If the event date is not found in the DataFrame.
+    """
+    return get_sunrise_or_sunset_time(df, event, "Sunset")
+    
+
 
 if __name__ == "__main__":
     # Example inputs
@@ -65,3 +119,4 @@ if __name__ == "__main__":
     output_file = os.path.join(os.path.dirname(__file__), "sunrise_sunset.json")
     df.to_json(output_file, orient="records", date_format="iso")
     print(f"Sunrise and sunset data saved to: {output_file}")
+

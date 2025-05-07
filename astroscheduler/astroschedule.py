@@ -1,5 +1,6 @@
 from astroscheduler.schedule_builder import ScheduleBuilder
 from datetime import date, timedelta, datetime
+from astroscheduler.sunrise_sunset import generate_sunrise_sunset_df, get_sunrise_time, get_sunset_time
 
 class AstroSchedule:
     def __init__(self, config, schedule_name="AstroSchedule"):
@@ -13,6 +14,7 @@ class AstroSchedule:
         self.config = config
         self.builder = ScheduleBuilder(version=self.config.ebo_version)
         self.schedule = self.builder.create_multistate_schedule(schedule_name, schedule_default=self.config.default_value)
+        self.sunrise_sunset_df = generate_sunrise_sunset_df(self.config.latitude, self.config.longitude, self.config.reference_year)
         self.events = []
         self.build()
 
@@ -25,7 +27,6 @@ class AstroSchedule:
                     it will default to the current year.
         """
         # Determine the year to use
-        print('year', year)
         if year is None:
             try:
                 year = int(self.config.reference_year)
@@ -109,6 +110,20 @@ class AstroSchedule:
             if entry.get("TimeReference") == "Absolute":
                 # Add time-value pairs to the event object
                 entries.append(entry)
+            if entry.get("TimeReference") == "SunriseOffset":
+                # if this entry is strunrise offset, get the sunrise hour and minute of this day and add the offsets from the entry
+                sunrise_entry = get_sunrise_time(self.sunrise_sunset_df, event)
+                offset_entry = entry.copy()
+                offset_entry["Hour"] = sunrise_entry["Hour"] + entry["Hour"]
+                offset_entry["Minute"] = sunrise_entry["Minute"] + entry["Minute"]
+                entries.append(offset_entry)
+            if entry.get("TimeReference") == "SunsetOffset":
+                # if this entry is sunset offset, get the sunset hour and minute of this day and add the offsets from the entry
+                sunset_entry = get_sunset_time(self.sunrise_sunset_df, event)
+                offset_entry = entry.copy()
+                offset_entry["Hour"] = sunset_entry["Hour"] + entry["Hour"]
+                offset_entry["Minute"] = sunset_entry["Minute"] + entry["Minute"]
+                entries.append(offset_entry)                
         self.builder.add_integer_value_pairs_to_event(event_object, entries)
 
     def build(self):

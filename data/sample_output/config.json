@@ -3,7 +3,7 @@
     "longitude": 153.028056,
     "schedule_type": "Multistate",
     "default_value": 4,
-    "reference_year": "=YEAR(TODAY())",
+    "reference_year": 2025,
     "ebo_version": "5.0.3.117",
     "entries": [
         {

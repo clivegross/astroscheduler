@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import shutil
 import openpyxl
@@ -117,6 +118,16 @@ class AstroSchedulerConfig:
             # Check if the key is in the expected keys map
             if key in self.config_keys:
                 setattr(self, self.config_keys[key], value)
+
+            # Determine the year to use
+            year = datetime.now().year
+            if self.reference_year is None:
+                try:
+                    year = int(self.reference_year)
+                except (AttributeError, ValueError) as e:
+                    year = datetime.now().year  # Default to the current year
+                    print(f'Failed to parse config ReferenceYear {self.reference_year}, got error {e}. Using current year {year} instead...')
+            self.reference_year = year
 
     def to_dict(self):
         """
