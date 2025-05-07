@@ -1,49 +1,21 @@
 # AstroScheduler
 
-**AstroScheduler** is a Python library for constructing EcoStruxure Building Operation (EBO)–compatible XML files programmatically. It is designed primarily for generating astronomical time schedules (e.g. multistate schedules with sunrise/sunset offset events) but is extensible to support any EBO object type.
+**AstroScheduler** is a Python library for constructing EcoStruxure Building Operation (EBO) Multistate Time Schedule objects with daily astronomical (sunrise/sunset offset) events. Sunrise and sunset times are automatically calculated based on provided latitude and longitude using the `astral` library.
 
 ## Features
 
-- Generate EBO-compliant `<ObjectSet>` XML exports.
-- Build multistate schedules with special events and time-value pairs.
-- Auto-assign names and indices to schedule objects.
-- Output readable, pretty-printed XML to file.
+- Generate EBO-compliant `<ObjectSet>` XML exports, ready for import into EBO.
+- Simplify time schedule configuration using an Excel spreadsheet. Template provided.
+- Create a combination of absolute time referenced and sunrise/sunset time referenced schedule events in the same schedule.
 - Modular design for future object types (via `EBOXMLBuilder` base class).
-- **NEW**: Manage configuration data with `AstroSchedulerConfig`.
 
 ---
 
 ## Example Usage
 
-### **ScheduleBuilder Example**
-```python
-from astroscheduler.schedule_builder import ScheduleBuilder
-
-# Create builder
-sb = ScheduleBuilder()
-
-# Define special event
-event = sb.create_special_event(index=1, name="Holiday", month=12)
-sb.add_integer_value_pairs_to_event(event, [
-    {"Hour": 6, "Minute": 0, "Value": 1},
-    {"Hour": 18, "Minute": 0, "Value": 0}
-])
-
-# Create schedule and add event
-schedule = sb.create_multistate_schedule("Office Lighting", schedule_default=0)
-sb.add_special_events_to_schedule(schedule, [event])
-sb.add_to_exported_objects(schedule)
-```
-
 ### AstroSchedulerConfig Example
 
 The AstroSchedulerConfig class is used to manage configuration data, including loading from an Excel spreadsheet, converting to a dictionary, and exporting to JSON.
-
-#### Features
-
-- Load configuration data from an Excel file.
-- Access configuration attributes like latitude, longitude, schedule_type, etc.
-- Export configuration data to a JSON file.
 
 #### Usage
 
@@ -55,13 +27,13 @@ from astroscheduler.config import AstroSchedulerConfig
 config = AstroSchedulerConfig()
 
 # Copy a sample Excel template to a desired location
-output_dir = os.path.join(os.path.dirname(__file__), "data/sample_input")
-os.makedirs(output_dir, exist_ok=True)
-template_path = os.path.join(output_dir, "TimeScheduleConfig.xlsx")
-config.copy_sample_template(template_path)
+template = "TimeScheduleConfig.xlsx"
+config.copy_sample_template(template)
+
+# … edit the template Excel file, save and close.
 
 # Load configuration from the Excel file
-config.from_spreadsheet(template_path)
+config.from_spreadsheet(template)
 
 # Access configuration attributes
 print("Latitude:", config.latitude)
@@ -73,7 +45,7 @@ print("Entries:", config.entries)
 output_json = os.path.join(os.path.dirname(__file__), "data/sample_output/config.json")
 config.to_json(output_json)
 ```
-
+- [ ] 
 #### Example Output
 
 JSON File (`config.json`):
@@ -107,3 +79,10 @@ JSON File (`config.json`):
 }
 ```
 
+### AstroScheduler Example
+
+The AstroSchedulerConfig class is used to build the astronomical time schedule object based on the provided config and write to EBO-compliant XML, ready for import.
+
+#### Usage
+
+TODO: add usage.
