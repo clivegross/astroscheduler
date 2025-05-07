@@ -1,0 +1,50 @@
+{
+    "latitude": -27.467778,
+    "longitude": 153.028056,
+    "schedule_type": "Multistate",
+    "default_value": 4,
+    "reference_year": "=YEAR(TODAY())",
+    "ebo_version": "6.0.4.90",
+    "entries": [
+        {
+            "Description": "WEE HOURS",
+            "TimeReference": "Absolute",
+            "Hour": 0,
+            "Minute": 0,
+            "Value": 7,
+            "Comments": "TimeReference Absolute means the entry starts at the time of day Hour:Minute"
+        },
+        {
+            "Description": "DAY",
+            "TimeReference": "SunriseOffset",
+            "Hour": 0,
+            "Minute": 0,
+            "Value": 1,
+            "Comments": "TimeReference SunriseOffset means the entry starts at sunrise plus Hours:Minutes"
+        },
+        {
+            "Description": "AFTERNOON",
+            "TimeReference": "Absolute",
+            "Hour": 16,
+            "Minute": 30,
+            "Value": 9,
+            "Comments": null
+        },
+        {
+            "Description": "EVENING",
+            "TimeReference": "SunsetOffset",
+            "Hour": 0,
+            "Minute": 0,
+            "Value": 2,
+            "Comments": "TimeReference SunsetOffset means the entry starts at sunset plus Hours:Minutes. Use negative values to start before sunset."
+        },
+        {
+            "Description": "NIGHT",
+            "TimeReference": "SunsetOffset",
+            "Hour": 1,
+            "Minute": 0,
+            "Value": 3,
+            "Comments": null
+        }
+    ]
+}

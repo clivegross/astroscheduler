@@ -128,7 +128,7 @@ class ScheduleBuilder(EBOXMLBuilder):
             name (str): The name of the event.
             index (int): The event index.
             event_name (str): The name of the event.
-            day_of_month (int): The day of the month.
+            day_of_month (int): The day of the month. Default is "255" (Any Day). 
             month (str, optional): The month. Default is "255" (Any Month).
             year (str, optional): The year. Default is "2155" (Any Year).
             priority (str, optional): The event priority. Default is "16".
