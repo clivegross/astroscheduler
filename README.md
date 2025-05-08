@@ -65,6 +65,10 @@ Two sheets are required, named `Entries` and `Configuration`.
 | Value            | The Value of the Time Schedule for this entry (or Null if restting to default). | Integer or empty or Null           | Null     |
 | Comments         | Optional additional notes about the time reference or logic. Ignored by `AstroSchedule`.        | Any string                                                         | N/A          |
 
+Example:
+
+![Entries](img/example%20Entries%20sheet.png)
+
 #### Configuration Sheet
 
 | **Field Name**   | **Description**                                                  | **Allowed Values**                                      | **Default Value**       |
@@ -76,6 +80,10 @@ Two sheets are required, named `Entries` and `Configuration`.
 | ReferenceYear    | The year for which sunrise/sunset data is generated.             | 4-digit year (e.g., `2025`)                             | Current year (optional) |
 | EBOVersion       | Version of the EcoStruxure Building Operation software.        | e.g. `"4.0.3"`, `"6.0.4.90"`                               | `"6.0.4.90"`               |
 | ScheduleName     | Name/label assigned to the generated schedule.                   | Any string                                              | `"AstroSchedule"`      |
+
+Example:
+
+![Entries](img/example%20Configuration%20sheet.png)
 
 #### Example code
 
