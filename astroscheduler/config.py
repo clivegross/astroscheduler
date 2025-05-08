@@ -14,7 +14,6 @@ class AstroSchedulerConfig:
         # Default configuration directory
         self.config_dir = config_dir or os.path.join(os.path.dirname(__file__), "config")
         self.template_file = os.path.join(self.config_dir, "TimeScheduleConfig.xlsx")
-        print(self.template_file)
 
         # Ensure the configuration directory exists
         os.makedirs(self.config_dir, exist_ok=True)
@@ -27,6 +26,7 @@ class AstroSchedulerConfig:
             "DefaultValue": "default_value",
             "ReferenceYear": "reference_year",
             "EBOVersion": "ebo_version",
+            "ScheduleName": "schedule_name",
         }
         # Initialize default values for configuration attributes
         self.latitude = None
@@ -35,6 +35,7 @@ class AstroSchedulerConfig:
         self.default_value = 0
         self.reference_year = 2025
         self.ebo_version = "4.0.1"
+        self.schedule_name = "AstroScheduler"
 
         # Initialize entries as an empty list
         self.entries = []
@@ -77,7 +78,7 @@ class AstroSchedulerConfig:
 
         :param file_path: Path to the Excel file to load.
         :raises FileNotFoundError: If the file does not exist.
-        :raises ValueError: If required sheets are not found.
+        :raises ValueError: If required sheets or keys are not found.
         """
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
@@ -95,9 +96,17 @@ class AstroSchedulerConfig:
         # Extract keys from the first row
         keys = [cell.value for cell in sheet_entries[1]]
 
+        # Check for required keys
+        required_keys = ["TimeReference", "Hour", "Minute", "Value"]
+        missing_keys = [key for key in required_keys if key not in keys]
+        if missing_keys:
+            raise ValueError(f"The following required keys are missing in the 'Entries' sheet: {', '.join(missing_keys)}")
+
         # Extract values from subsequent rows
         for row in sheet_entries.iter_rows(min_row=2, values_only=True):
             entry = {keys[i]: row[i] for i in range(len(keys))}
+            # Check the Value field for equivalent of None/Null value using the helper function
+            entry["Value"] = self.check_for_null_value(entry.get("Value"))
             entries_data.append(entry)
 
         # Save the data to self.entries
@@ -128,6 +137,22 @@ class AstroSchedulerConfig:
                     year = datetime.now().year  # Default to the current year
                     print(f'Failed to parse config ReferenceYear {self.reference_year}, got error {e}. Using current year {year} instead...')
             self.reference_year = year
+
+    def check_for_null_value(self, value):
+        """
+        Helper function to check if a value is considered "null" and return None.
+        If the value is not null, it attempts to convert it to an integer.
+
+        :param value: The value to check.
+        :return: None if the value is considered null, otherwise the integer value.
+        :raises ValueError: If the value cannot be converted to an integer.
+        """
+        if value is None or (isinstance(value, str) and value.strip().lower() in ["null", "none", ""]):
+            return None
+        try:
+            return int(value)
+        except ValueError:
+            raise ValueError(f"Invalid value: {value}. Must be an integer or one of ['null', 'none', '', None].")
 
     def to_dict(self):
         """
@@ -163,3 +188,79 @@ class AstroSchedulerConfig:
             json.dump(config_dict, json_file, indent=4)
 
         print(f"Configuration written to JSON file: {output_file}")
+
+    def add_entry(self, time_ref="Absolute", hour=0, minute=0, value=None):
+        """
+        Add an entry to the configuration's entries list.
+
+        :param time_ref: The time reference for the entry. Can be "SunriseOffset", "SunsetOffset", or "Absolute" (default).
+        :param hour: The hour value for the entry. Can be a string or number, but will be converted to a number.
+        :param minute: The minute value for the entry. Can be a string or number, but will be converted to a number.
+        :param value: The value for the entry. Can be a string, number, or None.
+        :raises ValueError: If time_ref is not one of the allowed values.
+        """
+        # Validate time_ref
+        allowed_time_refs = ["SunriseOffset", "SunsetOffset", "Absolute"]
+        if time_ref not in allowed_time_refs:
+            raise ValueError(f"time_ref must be one of {allowed_time_refs}, got '{time_ref}'.")
+
+        # Convert hour and minute to numbers
+        try:
+            hour = int(hour)
+        except ValueError:
+            raise ValueError(f"hour must be a number or a string that can be converted to a number, got '{hour}'.")
+
+        try:
+            minute = int(minute)
+        except ValueError:
+            raise ValueError(f"minute must be a number or a string that can be converted to a number, got '{minute}'.")
+
+        # Convert value to number or None
+        if value is not None:
+            try:
+                value = int(value)
+            except ValueError:
+                raise ValueError(f"value must be a number, a string that can be converted to a number, or None, got '{value}'.")
+
+        # Create the entry
+        entry = {
+            "TimeReference": time_ref,
+            "Hour": hour,
+            "Minute": minute,
+            "Value": value,
+        }
+
+        # Add the entry to self.entries
+        self.entries.append(entry)        
+
+if __name__ == "__main__":
+    # Initialize the configuration class
+    config = AstroSchedulerConfig()
+
+    # Define paths for input and output
+    script_dir = os.path.dirname(__file__)
+    input_dir = os.path.join(script_dir, "../data/sample_input")
+    output_dir = os.path.join(script_dir, "../data/sample_output")
+    os.makedirs(input_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Copy a sample Excel template to the input directory
+    template_path = os.path.join(input_dir, "TimeScheduleConfig.xlsx")
+    config.copy_sample_template(template_path)
+
+    # Load configuration from the Excel file
+    config.from_spreadsheet(template_path)
+
+    # Print configuration attributes
+    print("Configuration Attributes:")
+    print(f"Latitude: {config.latitude}")
+    print(f"Longitude: {config.longitude}")
+    print(f"Schedule Type: {config.schedule_type}")
+    print(f"Default Value: {config.default_value}")
+    print(f"Reference Year: {config.reference_year}")
+    print(f"EBO Version: {config.ebo_version}")
+    print(f"Entries: {config.entries}")
+
+    # Export configuration to a JSON file
+    output_json = os.path.join(output_dir, "config.json")
+    config.to_json(output_json)        

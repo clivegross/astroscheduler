@@ -92,8 +92,8 @@ class ScheduleBuilder(EBOXMLBuilder):
         builder.add_special_events_to_schedule(schedule, [event_1, event_2])
         builder.add_to_exported_objects(schedule)
     """
-    def __init__(self, version="6.0.4.90", server_full_path="/Server 1"):
-        super().__init__(version, server_full_path)
+    def __init__(self, ebo_version="6.0.4.90", server_full_path="/Server 1"):
+        super().__init__(ebo_version, server_full_path)
 
     @staticmethod
     def create_schedule_default(value):
@@ -110,6 +110,16 @@ class ScheduleBuilder(EBOXMLBuilder):
 
     @staticmethod
     def create_schedule_event_integer_value_pair(name, hour, minute, value, hidden="1"):
+        """
+        Create an XML element representing an integer value pair for a schedule event.
+
+        :param name: The name of the entry.
+        :param hour: The hour value.
+        :param minute: The minute value.
+        :param value: The value for the entry. If None, the Value element will have Null="1".
+        :param hidden: The hidden attribute for the entry (default is "1").
+        :return: An XML element representing the integer value pair.
+        """
         entry = ET.Element("OI", {
             "NAME": name,
             "TYPE": "system.schedulecommon.propertytypes.tvp.IntegerValuePair",
@@ -117,7 +127,11 @@ class ScheduleBuilder(EBOXMLBuilder):
         })
         ET.SubElement(entry, "PI", {"Name": "Hour", "Value": str(hour)})
         ET.SubElement(entry, "PI", {"Name": "Minute", "Value": str(minute)})
-        ET.SubElement(entry, "PI", {"Name": "Value", "Value": str(value)})
+        # Handle the Value element
+        if value is None:
+            ET.SubElement(entry, "PI", {"Name": "Value", "Null": "1"})
+        else:
+            ET.SubElement(entry, "PI", {"Name": "Value", "Value": str(value)})
         return entry
 
     @staticmethod
@@ -213,6 +227,6 @@ if __name__ == "__main__":
 
     builder.add_to_exported_objects(schedule)
     print(builder.to_pretty_xml())
-    builder.write_pretty_xml("schedule.xml")
+    builder.write_xml("schedule.xml")
 
     

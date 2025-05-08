@@ -8,7 +8,7 @@
     <ServerFullPath Value="/Server 1"/>
   </MetaInformation>
   <ExportedObjects>
-    <OI NAME="AstroSchedule" TYPE="schedule.NSPMultistateSchedule">
+    <OI NAME="MyAstroSchedule" TYPE="schedule.NSPMultistateSchedule">
       <PI Name="ScheduleDefault" Value="4"/>
       <OI NAME="ES00001" TYPE="system.schedulecommon.propertytypes.SpecialEvent" hidden="1">
         <PI Name="EventIndex" Value="1"/>

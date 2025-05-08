@@ -1,22 +1,123 @@
+from astroscheduler.config import AstroSchedulerConfig
 from astroscheduler.schedule_builder import ScheduleBuilder
 from datetime import date, timedelta, datetime
 from astroscheduler.sunrise_sunset import generate_sunrise_sunset_df, get_sunrise_time, get_sunset_time
+from astroscheduler.ebo_xml_builder import print_pretty_xml, to_pretty_xml
 
-class AstroSchedule:
-    def __init__(self, config, schedule_name="AstroSchedule"):
-        """
-        Initialize the ScheduleBuilderWithConfig class.
-
-        :param config: An instance of AstroSchedulerConfig.
-        """
+class AstroSchedule(ScheduleBuilder):
+    def __init__(self, config=None):
         if not config:
-            raise ValueError("A valid AstroSchedulerConfig instance is required.")
+            config = AstroSchedulerConfig()
         self.config = config
-        self.builder = ScheduleBuilder(version=self.config.ebo_version)
-        self.schedule = self.builder.create_multistate_schedule(schedule_name, schedule_default=self.config.default_value)
-        self.sunrise_sunset_df = generate_sunrise_sunset_df(self.config.latitude, self.config.longitude, self.config.reference_year)
+
+        # Parent constructor
+        super().__init__(ebo_version=config.ebo_version)
+
         self.events = []
+        self._schedule = self.create_multistate_schedule(
+            self.config.schedule_name, schedule_default=self.config.default_value
+        )
+        self._update_sunrise_sunset_df()
         self.build()
+
+    # === Properties for schedule ===
+
+    @property
+    def schedule(self):
+        """Generates schedule if it's not set or needs regeneration."""
+        return self._schedule
+
+    @property
+    def schedule_name(self):
+        return self.config.schedule_name
+
+    @schedule_name.setter
+    def schedule_name(self, value):
+        if value != self.config.schedule_name:
+            self.config.schedule_name = value
+            self._schedule = self.create_multistate_schedule(
+                self.config.schedule_name, schedule_default=self.config.default_value
+            )  # Regenerate schedule
+            self.build()
+
+    @property
+    def ebo_version(self):
+        return self._ebo_version
+
+    @ebo_version.setter
+    def ebo_version(self, value):
+        if value != self._ebo_version:
+            self._ebo_version = value
+            self.config.ebo_version = value
+            self.object_set = self._create_object_set()           
+
+    @property
+    def default_value(self):
+        return self.config.default_value
+
+    @default_value.setter
+    def default_value(self, value):
+        if value != self.config.default_value:
+            self.config.default_value = value
+            self._schedule = self.create_multistate_schedule(
+                self.config.schedule_name, schedule_default=self.config.default_value
+            )  # Regenerate schedule
+            self.build()
+
+    # === Properties for sunrise/sunset df ===
+
+    @property
+    def sunrise_sunset_df(self):
+        """Generates sunrise/sunset df if it needs regeneration."""
+        return self._sunrise_sunset_df
+
+    @property
+    def latitude(self):
+        return self.config.latitude
+
+    @latitude.setter
+    def latitude(self, value):
+        if value != self.config.latitude:
+            self.config.latitude = value
+            self._update_sunrise_sunset_df()
+            self.build()
+
+    @property
+    def longitude(self):
+        return self.config.longitude
+
+    @longitude.setter
+    def longitude(self, value):
+        if value != self.config.longitude:
+            self.config.longitude = value
+            self._update_sunrise_sunset_df()
+            self.build()
+
+    @property
+    def reference_year(self):
+        return self.config.reference_year
+
+    @reference_year.setter
+    def reference_year(self, value):
+        if value != self.config.reference_year:
+            self.config.reference_year = value
+            self._update_sunrise_sunset_df()
+            self.build()
+
+    def _update_sunrise_sunset_df(self):
+        lat = self.config.latitude
+        lon = self.config.longitude
+        year = self.config.reference_year
+
+        if None in (lat, lon, year):
+            self._sunrise_sunset_df = None
+            return
+
+        try:
+            self._sunrise_sunset_df = generate_sunrise_sunset_df(lat, lon, year)
+        except Exception as e:
+            print(f"Failed to generate sunrise/sunset data: {e}")
+            self._sunrise_sunset_df = None
 
     def create_events_for_year(self, year=None):
         """
@@ -60,7 +161,7 @@ class AstroSchedule:
         :param event: A dictionary containing event details (EventName, DayOfMonth, Month).
         :return: An event object created using ScheduleBuilder.
         """
-        event_object = self.builder.create_schedule_special_event(
+        event_object = self.create_schedule_special_event(
             event_name=event["EventName"],
             day_of_month=event["DayOfMonth"],
             month=event["Month"]
@@ -110,29 +211,79 @@ class AstroSchedule:
             if entry.get("TimeReference") == "Absolute":
                 # Add time-value pairs to the event object
                 entries.append(entry)
-            if entry.get("TimeReference") == "SunriseOffset":
+            if entry.get("TimeReference") == "SunriseOffset" and self.sunrise_sunset_df is not None:
                 # if this entry is strunrise offset, get the sunrise hour and minute of this day and add the offsets from the entry
                 sunrise_entry = get_sunrise_time(self.sunrise_sunset_df, event)
-                offset_entry = entry.copy()
-                offset_entry["Hour"] = sunrise_entry["Hour"] + entry["Hour"]
-                offset_entry["Minute"] = sunrise_entry["Minute"] + entry["Minute"]
+                offset_entry = self.offset_hour_minute(sunrise_entry, entry)
                 entries.append(offset_entry)
-            if entry.get("TimeReference") == "SunsetOffset":
+            if entry.get("TimeReference") == "SunsetOffset" and self.sunrise_sunset_df is not None:
                 # if this entry is sunset offset, get the sunset hour and minute of this day and add the offsets from the entry
                 sunset_entry = get_sunset_time(self.sunrise_sunset_df, event)
-                offset_entry = entry.copy()
-                offset_entry["Hour"] = sunset_entry["Hour"] + entry["Hour"]
-                offset_entry["Minute"] = sunset_entry["Minute"] + entry["Minute"]
-                entries.append(offset_entry)                
-        self.builder.add_integer_value_pairs_to_event(event_object, entries)
+                offset_entry = self.offset_hour_minute(sunset_entry, entry)
+                entries.append(offset_entry)
+        self.add_integer_value_pairs_to_event(event_object, entries)
+
+    def offset_hour_minute(self, entry, offset):
+        """
+        Adjust the hour and minute of an entry by applying an offset, handling negative minutes
+        and ensuring the time stays within valid ranges.
+
+        :param entry: A dictionary containing "Hour" and "Minute".
+        :param offset: A dictionary containing "Hour" and "Minute" to offset the entry.
+        :return: A new dictionary with adjusted "Hour" and "Minute".
+        """
+        entry_with_offset = offset.copy()
+        entry_with_offset["Hour"] = entry["Hour"] + offset["Hour"]
+        entry_with_offset["Minute"] = entry["Minute"] + offset["Minute"]
+
+        # Handle negative minutes
+        while entry_with_offset["Minute"] < 0:
+            entry_with_offset["Minute"] += 60
+            entry_with_offset["Hour"] -= 1
+
+        # Handle minutes greater than or equal to 60
+        while entry_with_offset["Minute"] >= 60:
+            entry_with_offset["Minute"] -= 60
+            entry_with_offset["Hour"] += 1
+
+        # Ensure the hour stays within valid ranges (0-23)
+        if entry_with_offset["Hour"] < 0:
+            entry_with_offset["Hour"] = 0
+            entry_with_offset["Minute"] = 0  # Reset to midnight if hour goes negative
+        elif entry_with_offset["Hour"] >= 24:
+            entry_with_offset["Hour"] = 23
+            entry_with_offset["Minute"] = 59  # Cap to the last minute of the day
+
+        return entry_with_offset
+
+    def add_entry(self, time_ref="Absolute", hour=0, minute=0, value=None):
+        """
+        Add a new entry to the schedule configuration and rebuild the schedule object.
+
+        :param time_ref: The time reference for the entry (e.g., "Absolute", "SunriseOffset").
+        :param hour: The hour of the entry.
+        :param minute: The minute of the entry.
+        :param value: The value associated with the entry.
+        """
+        print(f"Adding entry: TimeReference={time_ref}, Hour={hour}, Minute={minute}, Value={value}")
+        self.config.add_entry(time_ref, hour, minute, value)
+        # Rebuild the schedule object
+        self.build()
 
     def build(self):
         """
+        Build the schedule object based on the configuration.
         """
-        # create event for every day in year
-        self.create_events_for_year()
-        # create event xml objects and insert event entries from config
-        event_objects = self.create_event_objects()
-        # add events to schedule xml object
-        self.builder.add_special_events_to_schedule(self.schedule, event_objects)
-        self.builder.add_to_exported_objects(self.schedule)
+        self._schedule = self.create_multistate_schedule(
+            self.schedule_name, schedule_default=self.default_value
+        )
+        if self.config.entries:
+            # create a new schedule object
+            # create event for every day in year
+            self.create_events_for_year()
+            # create event xml objects and insert event entries from config
+            event_objects = self.create_event_objects()
+            # add events to schedule xml object
+            self.add_special_events_to_schedule(self.schedule, event_objects)
+        self.set_exported_objects(self.schedule)
+
